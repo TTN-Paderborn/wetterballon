@@ -1,8 +1,8 @@
 /**
   ******************************************************************************
-  * File Name          : I2C.c
+  * File Name          : RTC.c
   * Description        : This file provides code for the configuration
-  *                      of the I2C instances.
+  *                      of the RTC instances.
   ******************************************************************************
   * This notice applies to any and all portions of this file
   * that are not between comment pairs USER CODE BEGIN and
@@ -48,96 +48,91 @@
   */
 
 /* Includes ------------------------------------------------------------------*/
-#include "i2c.h"
+#include "rtc.h"
 
 /* USER CODE BEGIN 0 */
 
 /* USER CODE END 0 */
 
-I2C_HandleTypeDef hi2c1;
+RTC_HandleTypeDef hrtc;
 
-/* I2C1 init function */
-void MX_I2C1_Init(void)
+/* RTC init function */
+void MX_RTC_Init(void)
 {
+  RTC_TimeTypeDef sTime = {0};
+  RTC_DateTypeDef sDate = {0};
 
-  hi2c1.Instance = I2C1;
-  hi2c1.Init.Timing = 0x00707CBB;
-  hi2c1.Init.OwnAddress1 = 0;
-  hi2c1.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
-  hi2c1.Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;
-  hi2c1.Init.OwnAddress2 = 0;
-  hi2c1.Init.OwnAddress2Masks = I2C_OA2_NOMASK;
-  hi2c1.Init.GeneralCallMode = I2C_GENERALCALL_DISABLE;
-  hi2c1.Init.NoStretchMode = I2C_NOSTRETCH_DISABLE;
-  if (HAL_I2C_Init(&hi2c1) != HAL_OK)
+  /**Initialize RTC Only 
+  */
+  hrtc.Instance = RTC;
+  hrtc.Init.HourFormat = RTC_HOURFORMAT_24;
+  hrtc.Init.AsynchPrediv = 127;
+  hrtc.Init.SynchPrediv = 255;
+  hrtc.Init.OutPut = RTC_OUTPUT_DISABLE;
+  hrtc.Init.OutPutRemap = RTC_OUTPUT_REMAP_NONE;
+  hrtc.Init.OutPutPolarity = RTC_OUTPUT_POLARITY_HIGH;
+  hrtc.Init.OutPutType = RTC_OUTPUT_TYPE_OPENDRAIN;
+  if (HAL_RTC_Init(&hrtc) != HAL_OK)
   {
     Error_Handler();
   }
-  /**Configure Analogue filter 
+
+  /* USER CODE BEGIN Check_RTC_BKUP */
+    
+  /* USER CODE END Check_RTC_BKUP */
+
+  /**Initialize RTC and set the Time and Date 
   */
-  if (HAL_I2CEx_ConfigAnalogFilter(&hi2c1, I2C_ANALOGFILTER_ENABLE) != HAL_OK)
+  sTime.Hours = 0x0;
+  sTime.Minutes = 0x0;
+  sTime.Seconds = 0x0;
+  sTime.DayLightSaving = RTC_DAYLIGHTSAVING_NONE;
+  sTime.StoreOperation = RTC_STOREOPERATION_RESET;
+  if (HAL_RTC_SetTime(&hrtc, &sTime, RTC_FORMAT_BCD) != HAL_OK)
   {
     Error_Handler();
   }
-  /**Configure Digital filter 
-  */
-  if (HAL_I2CEx_ConfigDigitalFilter(&hi2c1, 0) != HAL_OK)
+  sDate.WeekDay = RTC_WEEKDAY_MONDAY;
+  sDate.Month = RTC_MONTH_JANUARY;
+  sDate.Date = 0x1;
+  sDate.Year = 0x0;
+
+  if (HAL_RTC_SetDate(&hrtc, &sDate, RTC_FORMAT_BCD) != HAL_OK)
   {
     Error_Handler();
   }
 
 }
 
-void HAL_I2C_MspInit(I2C_HandleTypeDef* i2cHandle)
+void HAL_RTC_MspInit(RTC_HandleTypeDef* rtcHandle)
 {
 
-  GPIO_InitTypeDef GPIO_InitStruct = {0};
-  if(i2cHandle->Instance==I2C1)
+  if(rtcHandle->Instance==RTC)
   {
-  /* USER CODE BEGIN I2C1_MspInit 0 */
+  /* USER CODE BEGIN RTC_MspInit 0 */
 
-  /* USER CODE END I2C1_MspInit 0 */
-  
-    __HAL_RCC_GPIOB_CLK_ENABLE();
-    /**I2C1 GPIO Configuration    
-    PB9     ------> I2C1_SDA
-    PB8     ------> I2C1_SCL 
-    */
-    GPIO_InitStruct.Pin = GPIO_PIN_9|GPIO_PIN_8;
-    GPIO_InitStruct.Mode = GPIO_MODE_AF_OD;
-    GPIO_InitStruct.Pull = GPIO_PULLUP;
-    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
-    GPIO_InitStruct.Alternate = GPIO_AF4_I2C1;
-    HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+  /* USER CODE END RTC_MspInit 0 */
+    /* RTC clock enable */
+    __HAL_RCC_RTC_ENABLE();
+  /* USER CODE BEGIN RTC_MspInit 1 */
 
-    /* I2C1 clock enable */
-    __HAL_RCC_I2C1_CLK_ENABLE();
-  /* USER CODE BEGIN I2C1_MspInit 1 */
-
-  /* USER CODE END I2C1_MspInit 1 */
+  /* USER CODE END RTC_MspInit 1 */
   }
 }
 
-void HAL_I2C_MspDeInit(I2C_HandleTypeDef* i2cHandle)
+void HAL_RTC_MspDeInit(RTC_HandleTypeDef* rtcHandle)
 {
 
-  if(i2cHandle->Instance==I2C1)
+  if(rtcHandle->Instance==RTC)
   {
-  /* USER CODE BEGIN I2C1_MspDeInit 0 */
+  /* USER CODE BEGIN RTC_MspDeInit 0 */
 
-  /* USER CODE END I2C1_MspDeInit 0 */
+  /* USER CODE END RTC_MspDeInit 0 */
     /* Peripheral clock disable */
-    __HAL_RCC_I2C1_CLK_DISABLE();
-  
-    /**I2C1 GPIO Configuration    
-    PB9     ------> I2C1_SDA
-    PB8     ------> I2C1_SCL 
-    */
-    HAL_GPIO_DeInit(GPIOB, GPIO_PIN_9|GPIO_PIN_8);
+    __HAL_RCC_RTC_DISABLE();
+  /* USER CODE BEGIN RTC_MspDeInit 1 */
 
-  /* USER CODE BEGIN I2C1_MspDeInit 1 */
-
-  /* USER CODE END I2C1_MspDeInit 1 */
+  /* USER CODE END RTC_MspDeInit 1 */
   }
 } 
 
