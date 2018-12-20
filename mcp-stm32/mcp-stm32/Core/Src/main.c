@@ -51,17 +51,20 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "adc.h"
+#include "dma.h"
 #include "fatfs.h"
 #include "i2c.h"
-#include "iwdg.h"
 #include "rtc.h"
 #include "spi.h"
 #include "usart.h"
-#include "wwdg.h"
 #include "gpio.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+
+#include <stdio.h>
+
+#include "app_gps.h"
 
 /* USER CODE END Includes */
 
@@ -84,6 +87,8 @@
 
 /* USER CODE BEGIN PV */
 
+static uint8_t gps_receive_char[2];
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -105,6 +110,8 @@ int main(void)
 {
   /* USER CODE BEGIN 1 */
 
+	uint32_t tick = HAL_GetTick();
+
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -125,15 +132,23 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
-  MX_WWDG_Init();
+  MX_DMA_Init();
   MX_ADC_Init();
   MX_FATFS_Init();
-  MX_IWDG_Init();
   MX_RTC_Init();
   MX_I2C1_Init();
   MX_USART1_UART_Init();
   MX_SPI2_Init();
+  MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
+
+  app_gps_init();
+
+  HAL_UART_Receive_IT(&huart1, gps_receive_char, 1);
+
+  printf("Ballon Tracker V0.02 2018-12-18\n");
+
+  HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, GPIO_PIN_SET);
 
   /* USER CODE END 2 */
 
@@ -141,9 +156,30 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+	  app_gps_loop();
+
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
+
+	  if ((HAL_GetTick() - tick) > 5000) {
+		  tick = HAL_GetTick();
+
+		  if (app_gps_data.fix_valid) {
+		  printf("GPS Valid=%d lon=%ld/%ld lat=%ld/%ld alt=%ld/%ld%c hd=%ld/%ld vd=%ld/%ld pd=%ld/%ld\n",
+				  app_gps_data.fix_valid,
+				  app_gps_data.longitude.value, app_gps_data.longitude.scale,
+				  app_gps_data.latitude.value, app_gps_data.latitude.scale,
+				  app_gps_data.altitude.value, app_gps_data.altitude.scale, app_gps_data.altitude_units,
+				  app_gps_data.hdop.value, app_gps_data.hdop.scale,
+				  app_gps_data.vdop.value, app_gps_data.vdop.scale,
+				  app_gps_data.pdop.value, app_gps_data.pdop.scale
+				  );
+		  }
+		  else {
+			  printf("GPS Valid=%d\n", app_gps_data.fix_valid);
+		  }
+	  }
   }
   /* USER CODE END 3 */
 }
@@ -167,12 +203,10 @@ void SystemClock_Config(void)
   __HAL_RCC_LSEDRIVE_CONFIG(RCC_LSEDRIVE_LOW);
   /**Initializes the CPU, AHB and APB busses clocks 
   */
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI|RCC_OSCILLATORTYPE_LSI
-                              |RCC_OSCILLATORTYPE_LSE;
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI|RCC_OSCILLATORTYPE_LSE;
   RCC_OscInitStruct.LSEState = RCC_LSE_ON;
   RCC_OscInitStruct.HSIState = RCC_HSI_ON;
   RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
-  RCC_OscInitStruct.LSIState = RCC_LSI_ON;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSI;
   RCC_OscInitStruct.PLL.PLLMUL = RCC_PLLMUL_6;
@@ -194,9 +228,10 @@ void SystemClock_Config(void)
   {
     Error_Handler();
   }
-  PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_USART1|RCC_PERIPHCLK_I2C1
-                              |RCC_PERIPHCLK_RTC;
+  PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_USART1|RCC_PERIPHCLK_USART2
+                              |RCC_PERIPHCLK_I2C1|RCC_PERIPHCLK_RTC;
   PeriphClkInit.Usart1ClockSelection = RCC_USART1CLKSOURCE_PCLK2;
+  PeriphClkInit.Usart2ClockSelection = RCC_USART2CLKSOURCE_PCLK1;
   PeriphClkInit.I2c1ClockSelection = RCC_I2C1CLKSOURCE_PCLK1;
   PeriphClkInit.RTCClockSelection = RCC_RTCCLKSOURCE_LSE;
   if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit) != HAL_OK)
@@ -210,6 +245,21 @@ void SystemClock_Config(void)
 }
 
 /* USER CODE BEGIN 4 */
+
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
+{
+	if (huart == &huart1) {
+		app_gps_receive_char(*gps_receive_char);
+		HAL_UART_Receive_IT(&huart1, gps_receive_char, 1);
+	}
+}
+
+void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart)
+{
+	if (huart == &huart1) {
+		 HAL_UART_Receive_IT(&huart1, gps_receive_char, 1);
+	}
+}
 
 /* USER CODE END 4 */
 

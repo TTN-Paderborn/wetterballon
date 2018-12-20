@@ -1,8 +1,8 @@
 /**
   ******************************************************************************
-  * File Name          : IWDG.h
+  * File Name          : dma.c
   * Description        : This file provides code for the configuration
-  *                      of the IWDG instances.
+  *                      of all the requested memory to memory DMA transfers.
   ******************************************************************************
   * This notice applies to any and all portions of this file
   * that are not between comment pairs USER CODE BEGIN and
@@ -46,36 +46,42 @@
   *
   ******************************************************************************
   */
-/* Define to prevent recursive inclusion -------------------------------------*/
-#ifndef __iwdg_H
-#define __iwdg_H
-#ifdef __cplusplus
- extern "C" {
-#endif
-
 /* Includes ------------------------------------------------------------------*/
-#include "main.h"
+#include "dma.h"
 
-/* USER CODE BEGIN Includes */
+/* USER CODE BEGIN 0 */
 
-/* USER CODE END Includes */
+/* USER CODE END 0 */
 
-extern IWDG_HandleTypeDef hiwdg;
+/*----------------------------------------------------------------------------*/
+/* Configure DMA                                                              */
+/*----------------------------------------------------------------------------*/
 
-/* USER CODE BEGIN Private defines */
+/* USER CODE BEGIN 1 */
 
-/* USER CODE END Private defines */
+/* USER CODE END 1 */
 
-void MX_IWDG_Init(void);
+/** 
+  * Enable DMA controller clock
+  */
+void MX_DMA_Init(void) 
+{
+  /* DMA controller clock enable */
+  __HAL_RCC_DMA1_CLK_ENABLE();
 
-/* USER CODE BEGIN Prototypes */
+  /* DMA interrupt init */
+  /* DMA1_Channel2_3_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA1_Channel2_3_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(DMA1_Channel2_3_IRQn);
+  /* DMA1_Channel4_5_6_7_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA1_Channel4_5_6_7_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(DMA1_Channel4_5_6_7_IRQn);
 
-/* USER CODE END Prototypes */
-
-#ifdef __cplusplus
 }
-#endif
-#endif /*__ iwdg_H */
+
+/* USER CODE BEGIN 2 */
+
+/* USER CODE END 2 */
 
 /**
   * @}
