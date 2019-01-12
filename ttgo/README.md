@@ -18,3 +18,11 @@ UART:
 
 SPI:
  * micro SD Karte (innen)
+
+## Pins
+
+Pin Mapping für den TTGO LoRa32 v2.1 - T3_v1.6.
+
+I2C:
+ * SDL - Pin 21
+ * SCL - Pin 22
