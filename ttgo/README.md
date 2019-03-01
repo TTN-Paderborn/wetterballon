@@ -29,7 +29,7 @@ I2C:
 
 OneWire (DS18B20):
  * DQ - Pin 13
- * Pull-Up Widerstand zwischen 3.3V und DQ
+ * Pull-Up Widerstand (4k7) zwischen 3.3V und DQ
 
 UART (GPS - wie TTGO T-Beam):
  * TX - Pin 12
