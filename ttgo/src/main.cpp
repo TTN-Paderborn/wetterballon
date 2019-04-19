@@ -7,10 +7,18 @@
 #include "Adafruit_SI1145.h"
 #include <BH1750.h>
 #include "MPU9250.h"
+#include <TinyGPS++.h>
 
 // TTGO v2.1 - T3_v1.6
 #define I2C_SDL 21
 #define I2C_SCL 22
+
+// GPS Module
+#define GPS_TX 19
+#define GPS_RX 23
+#define GPS_BAUD 9600
+TinyGPSPlus gps;
+HardwareSerial gpsSerial(2);
 
 // Bosch BME280
 #define SEALEVELPRESSURE_HPA (1039.00)
@@ -26,9 +34,25 @@ BH1750 lightMeter;
 MPU9250 IMU(Wire,0x68);
 int status;
 
+static void smartDelay(unsigned long ms)
+{
+  unsigned long start = millis();
+  do 
+  {
+    while (gpsSerial.available())
+    {
+      gps.encode(gpsSerial.read());
+    }
+  } while (millis() - start < ms);
+}
+
 void setup()
 {
+  // setup debug output
   Serial.begin(9600);
+
+  // setup hardware serial for GPS data
+  gpsSerial.begin(GPS_BAUD, SERIAL_8N1, GPS_RX, GPS_TX);
  
   // Initialize the I2C bus (BH1750 library doesn't do this automatically)
   Wire.begin(I2C_SDL, I2C_SCL);
@@ -58,7 +82,7 @@ void setup()
   }
   Serial.println(F("BME280 Test begin"));
 
-  if (! uv.begin()) {
+  if (!uv.begin()) {
     Serial.println("Didn't find Si1145");
     while (1);
   }
@@ -129,7 +153,23 @@ void loop()
   UVindex /= 100.0;  
   Serial.print("UV: ");  Serial.println(UVindex);
 
+  // show GPS data
+  if (gps.location.isValid() && gps.hdop.isValid())
+  {
+    Serial.print("GPS: HDOP: ");
+    Serial.print(gps.hdop.hdop());
+    Serial.print(" - Latitude: ");
+    Serial.print(gps.location.lat(), 6);
+    Serial.print(" - Longitude: ");
+    Serial.print(gps.location.lng(), 6);
+    Serial.println();
+  }
+  else
+  {
+    Serial.println("GPS not valid, yet!");
+  }
+
   Serial.println();
 
-  delay(1000);
+  smartDelay(1000);
 }
